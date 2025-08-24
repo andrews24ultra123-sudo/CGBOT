@@ -1,0 +1,20 @@
+name: Telegram Polls (SGT)
+
+on:
+  schedule:
+    # 6:00 PM SGT == 10:00 AM UTC
+    - cron: "0 10 * * 6"   # Saturdays -> Sunday Service poll
+    - cron: "0 10 * * 3"   # Wednesdays -> Cell Group poll
+  workflow_dispatch:
+
+jobs:
+  send-poll:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests tzdata
+      - name: Run poll script
+        run: python send_poll.py
