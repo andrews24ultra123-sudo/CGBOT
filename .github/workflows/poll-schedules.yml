@@ -6,9 +6,38 @@ on:
     - cron: "0 10 * * 6"   # Saturdays -> Sunday Service poll
     - cron: "0 10 * * 3"   # Wednesdays -> Cell Group poll
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "Choose TEST (instant), SAT (Sunday Service), or WED (Cell Group)"
+        required: true
+        default: "TEST"
+        type: choice
+        options: ["TEST", "SAT", "WED"]
+      chat_id_override:
+        description: "(Optional) Override chat id (TEST mode only)"
+        required: false
+        default: ""
+        type: string
+      custom_question:
+        description: "(Optional) Custom question (TEST mode only)"
+        required: false
+        default: "Test Poll – does this work?"
+        type: string
+      custom_options:
+        description: '(Optional) Comma-separated options for TEST, e.g. "Yes,No"'
+        required: false
+        default: "Yes,No"
+        type: string
+      allow_multi:
+        description: "Allow multiple answers? (TEST mode only)"
+        required: false
+        default: "false"
+        type: choice
+        options: ["false", "true"]
 
 jobs:
-  send-poll:
+  saturday:
+    if: github.event.schedule == '0 10 * * 6'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,5 +45,35 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install requests tzdata
-      - name: Run poll script
+      - name: Send SAT poll (scheduled)
+        run: python send_poll.py
+
+  wednesday:
+    if: github.event.schedule == '0 10 * * 3'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests tzdata
+      - name: Send WED poll (scheduled)
+        run: python send_poll.py
+
+  manual:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests tzdata
+      - name: Send poll (manual run)
+        env:
+          MODE: ${{ inputs.mode }}
+          CHAT_ID_OVERRIDE: ${{ inputs.chat_id_override }}
+          CUSTOM_QUESTION: ${{ inputs.custom_question }}
+          CUSTOM_OPTIONS: ${{ inputs.custom_options }}
+          ALLOW_MULTI: ${{ inputs.allow_multi }}
         run: python send_poll.py
